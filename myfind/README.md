@@ -1,6 +1,6 @@
-# Project 1: Myfind
+# Assignment 1: Myfind
 
-用于 Rust 开放实训短学期课程
+用于 Rust 开发实训短学期课程
 
 ## Instructions
 
