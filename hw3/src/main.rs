@@ -17,77 +17,85 @@ macro_rules! hash_map {
     };
 }
 
-// Ex2: 
+// Ex2: MyRc --------------------------
+use std::ops::Deref;
 
-use std::cell::RefCell;
+pub struct MyRcRef<T> {
+    obj: T,
+    cnt: i32
+}
 
-// struct MyRc<T: Sized> {
-//     ptr: Box<RefCell<(T, u32)>>
-// }
+impl<T> MyRcRef<T> {
+    pub fn new(t: T) -> Self {
+        MyRcRef { obj: t, cnt: 1 }
+    }
+    fn change_cnt(&mut self, delta: i32) {
+        self.cnt += delta;
+    }
+    pub fn inc(&mut self) {
+        self.change_cnt(1);
+    }
+    pub fn dec(&mut self) {
+        self.change_cnt(-1);
+    }
+    pub fn get_cnt(&self) -> i32{
+        self.cnt
+    }
+}
 
-// impl<T> MyRc<T> {
-//     pub fn new(t: T) -> Self {
-//         MyRc { ptr: Box::new(RefCell::new((t, 1))) }
-//     }
-// }
+pub struct MyRc<T> {
+    ptr: *mut MyRcRef<T>
+}
 
-// impl<T> Clone for MyRc<T> {
-//     fn clone(&self) -> Self {
-//         self.ptr.as_mut().get_mut().1 += 1;
-//         MyRc { ptr: Box::new(RefCell::) }
-//     }
-// }
+impl<T> MyRc<T> {
+    pub fn new(t: T) -> Self {
+        Self { ptr: Box::into_raw(Box::new(MyRcRef::new(t))) }
+    }
+    pub fn strong_count(&self) -> i32 {
+        unsafe {
+            (*self.ptr).get_cnt()
+        }
+    }
+}
 
-// struct MyRcRef<'r, T> {
-//     obj: &'r T,
-//     cnt: &'r i32
-// }
+impl<T> Clone for MyRc<T> {
+    fn clone(&self) -> Self {
+        unsafe {
+            (*self.ptr).inc();
+        }
+        MyRc { ptr: self.ptr }
+    }
+}
 
-// impl<'r, T> MyRcRef<'r, T> {
-//     pub fn new(t: &'r T) -> Self {
-//         MyRcRef { obj: t, cnt: &1 }
-//     }
-//     fn change_cnt(&mut self, delta: i32) {
-//         let res = *self.cnt + delta;
-//         self.cnt = res;
-//     }
-//     pub fn inc(&mut self) {
-//         self.change_cnt(1);
-//     }
-//     pub fn dec(&mut self) {
-//         self.change_cnt(-1);
-//     }
-//     pub fn get_cnt(&self) -> i32 {
-//         *self.cnt
-//     }
-// }
+impl<T> Deref for MyRc<T> {
+    type Target = T;
+    fn deref(&self) -> &Self::Target {
+        unsafe {
+            &(*self.ptr).obj
+        }
+    }
+}
 
-// // impl<'r, T> Drop for MyRcRef<'r, T> {
-// //     fn drop(&mut self) {}
-// // }
+impl<T> Drop for MyRc<T> {
+    fn drop(&mut self) {
+        unsafe {
+            (*self.ptr).dec();
+            if (*self.ptr).get_cnt() == 0 {
+                drop(Box::from_raw(self.ptr));
+            }
+        }
+    }
+}
 
-// pub struct MyRc<'r, T> {
-//     ptr: RefCell<MyRcRef<'r, T>>
-// }
-
-// impl<'r, T> MyRc<'r, T> {
-//     pub fn new(t: &'r T) -> Self {
-//         MyRc { ptr: RefCell::new(MyRcRef::new(t)) }
-//     }
-//     pub fn strong_count(&self) -> i32 {
-//         self.ptr.borrow().get_cnt()
-//     }
-// }
-
-// impl<'r, T> Clone for MyRc<'r, T> {
-//     fn clone(&self) -> Self {
-//         self.ptr.borrow_mut().inc();
-//         MyRc { ptr: RefCell::new(MyRcRef { obj: (self.ptr.borrow().obj), cnt: (self.ptr.borrow().cnt) }) }
-//     }
-// } 
+impl<T> std::fmt::Display for MyRc<T> 
+where T: std::fmt::Display {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", **self)
+    }
+}
 
 // Ex3: simple_stack ---------------------
-// use std::cell::RefCell;
+use std::cell::RefCell;
 
 #[derive(Debug)]
 struct SimpleStack<T> {
@@ -107,7 +115,7 @@ impl<T> SimpleStack<T> {
 }
 
 fn main() {
-    // Ex1: hash_map!--------------------
+    println!("Ex1: hash_map!--------------------");
     let map = hash_map!{
         "one" => 1,
         "two" => 2,
@@ -117,8 +125,15 @@ fn main() {
     };
     println!("{:?}", map);
 
+    println!("\nEx2: MyRc --------------------------");
+    let five = MyRc::new(5);
+    let five1 = five.clone();
+    let five2 = MyRc::clone(&five1);
+    println!("five1 = {}", five1);
+    println!("five2 = {}", five2);
+    println!("strong_cnt of *five* = {}", MyRc::strong_count(&five1));
 
-    // Ex3: simple_stack ------------------
+    println!("\nEx3: simple_stack ------------------");
     let stack = SimpleStack::new();
     stack.push(1);
     stack.push(2);
