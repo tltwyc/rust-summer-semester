@@ -17,3 +17,7 @@ cargo run
 ```
 
 to check the outputs of the program.
+
+## Notes
+
+**I haven't found a method to implement `MyRc<T>` without raw pointers.**
