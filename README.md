@@ -4,3 +4,4 @@
 - Assignment 2: Generics, Strings, Closure & Iterators
 - Assignment 3: Trait, Lifetime, Macro & Smart Pointers
 - Assignment 4: Asynchronous Runtime
+- Assignment 5: Mini-Redis-Basic
